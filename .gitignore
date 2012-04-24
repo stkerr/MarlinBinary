@@ -1,0 +1,10 @@
+*.o
+.dep.inc
+
+MarlinTestApp/MarlinBinaryTestApp.TEMPBUFFER
+
+MarlinTestApp/MarlinBinaryTestApp
+
+MarlinTestApp/MarlinBinaryTestApp.MARLIN
+
+MarlinTestApp/stkerr@pod1-1.cs.purdue.edu
