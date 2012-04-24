@@ -18,7 +18,8 @@ std::map<std::string, int> current_addresses;
 bool lowlevel_patch(unsigned char *buffer, int offset, int dest)
 {
 	cout << hex << "Patching: 0x" << offset << " to 0x" << dest << endl;
-
+        cout << hex << "\t" << FILE_TO_TEXT(offset) << " to 0x" << FILE_TO_TEXT(dest) << endl;
+        
 	int distance_to_jump = dest-offset-4; // 4 bytes for the instruction
 
 	*((int*)(buffer+offset)) = distance_to_jump;
@@ -51,6 +52,9 @@ bool lowlevel_patch(unsigned char *buffer, int offset, int dest)
 
 #define MASTER(func,dest,off,d_off,count) \
         START() \
+        ADDITION(func,dest,off,d_off,count)
+
+#define ADDITION(func,dest,off,d_off,count) \
         GEN_PATCH( func , dest , off, d_off , count) \
         GEN_JUMP( func, count) \
         GEN_INSERT (  func , count)
@@ -74,31 +78,33 @@ map<string, list<jumppatching*>* >* prepare_patch_database()
 	MASTER(jump_function8, function8, 4, 0, 0)
 	MASTER(jump_function9, function9, 4, 0, 0)
 	MASTER(jump_function10, function10, 4, 0, 0)
-/*
-        MASTER(main, function1, 11, 0, 0)
-        MASTER(main, function2, 16, 0, 1)
-        MASTER(main, function3, 21, 0, 2)
-        MASTER(main, function4, 26, 0, 3)
-        MASTER(main, function5, 31, 0, 4)
-        MASTER(main, function6, 36, 0, 5)
-        MASTER(main, function7, 41, 0, 6)        
-        MASTER(main, function8, 46, 0, 7)
-        MASTER(main, function9, 51, 0, 8)
-        MASTER(main, function10, 56, 0, 9)
+                
+        //MASTER(main, function1, 10, 0, 0)
+
+                
+        MASTER(main, function1, 10, 0, 0)
+        ADDITION(main, function2, 15, 0, 1)
+        ADDITION(main, function3, 20, 0, 2)
+        ADDITION(main, function4, 25, 0, 3)
+        ADDITION(main, function5, 30, 0, 4)
+        ADDITION(main, function6, 35, 0, 5)
+        ADDITION(main, function7, 40, 0, 6)        
+        ADDITION(main, function8, 45, 0, 7)
+        ADDITION(main, function9, 50, 0, 8)
+        ADDITION(main, function10, 55, 0, 9)
        
 
-        MASTER(main, jump_function1, 61, 0, 11)
-        MASTER(main, jump_function2, 70, 0, 12)
-        MASTER(main, jump_function3, 79, 0, 13)
-        MASTER(main, jump_function4, 88, 0, 14)
-        MASTER(main, jump_function5, 97, 0, 15)
-        MASTER(main, jump_function6, 106, 0, 16)
-        MASTER(main, jump_function7, 115, 0, 17)        
-        MASTER(main, jump_function8, 124, 0, 18)
-        MASTER(main, jump_function9, 133, 0, 19)
- 
-        MASTER(main, jump_function10, 142, 0, 10)
-          */     
+        ADDITION(main, jump_function1, 60, 0, 11)
+        ADDITION(main, jump_function2, 69, 0, 12)
+        ADDITION(main, jump_function3, 78, 0, 13)
+        ADDITION(main, jump_function4, 87, 0, 14)
+        ADDITION(main, jump_function5, 96, 0, 15)
+        ADDITION(main, jump_function6, 105, 0, 16)
+        ADDITION(main, jump_function7, 114, 0, 17)        
+        ADDITION(main, jump_function8, 123, 0, 18)
+        ADDITION(main, jump_function9, 132, 0, 19)
+        ADDITION(main, jump_function10, 141, 0, 10)
+        
     /*
     patch jump_function1_patch;
     strcpy(jump_function1_patch.function_name, "jump_function1");
