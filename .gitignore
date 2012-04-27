@@ -10,3 +10,23 @@ MarlinTestApp/MarlinBinaryTestApp.MARLIN
 MarlinTestApp/stkerr@pod1-1.cs.purdue.edu
 
 dist/Debug/GNU-MacOSX/marlinbinaryprocessor
+/build/Debug/
+DynamicMarlin/patch.cpp
+
+DynamicMarlin/symbols.S
+
+DynamicMarlin/symbols.cpp
+
+MarlinTestApp/a.out
+
+MarlinTestApp/inifite.c
+
+MarlinTestApp/symbols.S
+
+patch.cpp
+
+symbols.cpp
+
+test
+
+DynamicMarlin/code.S

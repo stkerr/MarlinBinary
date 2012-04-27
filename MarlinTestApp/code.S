@@ -358,7 +358,7 @@ Disassembly of section .text:
  80486ba:	83 7c 24 48 09       	cmpl   $0x9,0x48(%esp)
  80486bf:	0f 9e c0             	setle  %al
  80486c2:	84 c0                	test   %al,%al
- 80486c4:	75 c3                	jne    8048689 <main+0xaf>
+ 80486c4:	75 c3                	jne    8048689 <myhackedfunction>
  80486c6:	8b 44 24 4c          	mov    0x4c(%esp),%eax
  80486ca:	89 44 24 04          	mov    %eax,0x4(%esp)
  80486ce:	c7 04 24 c6 87 04 08 	movl   $0x80487c6,(%esp)
