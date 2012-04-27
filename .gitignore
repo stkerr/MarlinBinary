@@ -30,3 +30,13 @@ symbols.cpp
 test
 
 DynamicMarlin/code.S
+
+DynamicMarlin/CustomMarlinizer
+
+DynamicMarlin/a.out
+
+DynamicMarlin/main.cpp
+
+DynamicMarlin/jumppatching.h
+
+DynamicMarlin/text_symbols.h

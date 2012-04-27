@@ -1,6 +1,9 @@
 #!/usr/bin/perl -w
 use strict;
 
+# don't line buffer STDOUT
+$| = 1;
+
 require "generator_functions.pl";
 require "generator_strings.pl";
 
@@ -12,7 +15,9 @@ open FILE, $ARGV[0] or die $!;
 my $text_section= do { local $/; <FILE> };
 close FILE;
 
+# parse the section header file out to get some start addresses
 my $file_start = find_file_start($ARGV[1]);
+my $text_start = find_text_start($ARGV[1]);
 
 # only use the .text section
 $text_section =~ s/^.*?.Disassembly of section .text://s;
@@ -21,21 +26,19 @@ $text_section =~ s/Disassembly of section.*$//s;
 
 $text_section =~ s/^\s+|\s+$//g;
 
-#print $text_section;
-
-#my @array;
-#{
-#  local $/ = '\n';
-#  @array = $text_section;
-#}
-
+# open the files we dynamically generate
 open PATCHING, ">", 'patch.cpp' || die("Cannot Open File");
-open TEXT_SYMBOLS, ">", 'symbols.cpp' || die("Cannot Open File");
+open TEXT_SYMBOLS, ">", 'text_symbols.h' || die("Cannot Open File");
+open MAIN, ">", 'main.cpp' || die("Cannot open main file");
+open JUMPPATCH, ">", 'jumppatching.h' || die("Cannot open jumppatching.h");
 
 our $patch_start;
 our $symbols_start;
 
+
+
 print PATCHING $patch_start;
+
 
 
 
@@ -54,17 +57,27 @@ my $first_symbol = "-1";
 # the string to print in the namespace
 my $symbol_namespace = "";
 
+# the pushback list (needed for main.cpp)
+my $pushback_list = "";
+
+# address lists (needed for main.cpp)
+my $address_list = "";
+
+# length list (needed for main.cpp)
+my $length_list = "";
+
+# iterate through each symbol stripped out
 foreach(@array)
 {
+	# get the lines of the entry as an array
 	my @lines = split(/\n/);
 
-#	print $lines[0];
-
-
+	# parse the name of this function
 	my $function_name = $lines[0];
 	$function_name =~ s/^.*<//s;
 	$function_name =~ s/>.*$//s;
 	
+	# ignore forbidden symbols
 	if (grep {$_ eq $function_name} @forbidden)
 	{
 #		print $function_name . " is forbidden\n";
@@ -84,40 +97,62 @@ foreach(@array)
 #		print "New first: " . $first_symbol . "\n";
 	}
 
-#	print $function_address;
-
+	# grab the last line of the entry
 	my $last_line = $lines[scalar(@lines)-1];
-#	my $last_line = $lines[2];
-#	print $last_line;
 
+	# mark the address of the last line
 	my $last_line_address = $last_line;
 	$last_line_address =~ s/^\ *//s;
 	$last_line_address =~ s/:.*$//s;
 #	print $last_line_address;
 
+	# count how many bytes are on this line
 	my $bytes = $last_line;
 	$bytes =~ s/^[^\t]*\t//s;
 	$bytes =~ s/\t.*$//s;
 	my $count = $bytes =~ tr/e//;
 	$count = $count + 1;
 	
+	# calculate the length of this function
 	my $function_length = hex($last_line_address) + $count - hex($function_address);
-#	printf("%x", $function_length);
 
-# we want to make
-# const text_symbol fun_function1 = { 0x1D, TEXT_TO_FILE(0x80484c4), "function1", NOPATCHNEEDED};
+	# append the length to the length list (not the main function though)
+	if($function_name ne "main")
+	{
+		$length_list = $length_list . " + " . $function_length;
+	}
+	
+	# we want to make
+	# const text_symbol fun_function1 = { 0x1D, TEXT_TO_FILE(0x80484c4), "function1", NOPATCHNEEDED};
 	$symbol_namespace = $symbol_namespace . "const text_symbol fun_" . $function_name . " = { " . $function_length
 		. ", TEXT_TO_FILE(" . $function_address . "), \"" . $function_name
 		. "\", ";
 	
+	# append this symbol to the pushback list
+	$pushback_list = $pushback_list . "symbols.push_back(text_symbols::fun_" . $function_name . ");\n";
+
+	# generate the function address lines
+	#        function_addresses.push_back(pair<string, pair<unsigned int, unsigned int> >("function1", pair<unsigned int, unsigned int>(text_symbols::fun_function1.address, 0x1d)));
+	#		 current_address_map.insert(pair<string, unsigned int>("function1", text_symbols::fun_function1.address));
+	if($function_name ne "main")
+	{
+		$address_list = $address_list . "function_addresses.push_back(pair<string, pair<unsigned int, unsigned int> >(\"" . $function_name . 
+			"\", pair<unsigned int, unsigned int>(text_symbols::fun_" . $function_name . ".address, " . $function_length . ")));\n";
+	}
+
+	$address_list = $address_list . "current_address_map.insert(pair<string, unsigned int>(\"" . $function_name . "\", text_symbols::fun_" . $function_name . ".address));\n";
+
+
+	# sentinel value if this function needs patching
 	my $patch_needed = 0;
+
 
 	
 
 
-#######################
-# Calculate jumps now #
-#######################
+	#######################
+	# Calculate jumps now #
+	#######################
 	
 	my $jump_count = 0;
 
@@ -181,15 +216,21 @@ foreach(@array)
 
 }
 
+#print STDOUT $pushback_list . "\n";
+
 our $patching_end;
 print PATCHING $patching_end;
 
+# print the text_symbols.h header
 print TEXT_SYMBOLS $symbols_start;
-print TEXT_SYMBOLS $first_symbol;
 
+# print the start address of the .text section in text_symbols.h
+print TEXT_SYMBOLS $text_start;
+
+# print the FILE_START constant
 print TEXT_SYMBOLS ")
 #define FILE_START (";
- 
+#	print $file_start . "\n";
 print TEXT_SYMBOLS $file_start;
 print TEXT_SYMBOLS ")";
 
@@ -197,9 +238,37 @@ our $symbols_mid;
 print TEXT_SYMBOLS $symbols_mid;
 print TEXT_SYMBOLS $symbol_namespace;
 
+
 #print $file_start;
 #	0x3f0
 
 our $symbols_end;
 print TEXT_SYMBOLS $symbols_end;
 
+
+#### Make main.cpp ###
+our $main_start;
+our $main_mid;
+our $main_end;
+print MAIN $main_start;
+
+# print the start and length lines
+#	unsigned int start = 0x80484c4;
+#	unsigned int end = start + 10 * 0x1D + 10 * 0xA;
+print MAIN "unsigned int start = " . $first_symbol . ";\n";
+print MAIN "unsigned int end = start " . $length_list . ";\n";
+
+# print the addresses
+print MAIN $address_list;
+
+print MAIN $main_mid;
+
+# print the pushback list
+print MAIN $pushback_list;
+
+print MAIN $main_end;
+
+
+### Make jumppatching.h ###
+our $jumppatching_whole;
+print JUMPPATCH $jumppatching_whole;
