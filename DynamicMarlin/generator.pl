@@ -16,8 +16,12 @@ my $text_section= do { local $/; <FILE> };
 close FILE;
 
 # parse the section header file out to get some start addresses
-my $file_start = find_file_start($ARGV[1]);
+my $text_file_start = find_file_text_start($ARGV[1]);
 my $text_start = find_text_start($ARGV[1]);
+my $plt_start = find_plt_start($ARGV[1]);
+my $plt_file_start = find_file_plt_start($ARGV[1]);
+
+my ($plt_first, $plt_second, $plt_third) = generate_plt_list($ARGV[0]);
 
 # only use the .text section
 $text_section =~ s/^.*?.Disassembly of section .text://s;
@@ -45,7 +49,7 @@ print PATCHING $patch_start;
 my @array = split(/\n{2,}/, $text_section); # note the new pattern
 
 # forbidden symbols we do not want to touch
-my @forbidden = ("_start", "call_gmon_start", "__libc_csu_init", "__libc_csu_fini", "printf");
+my @forbidden = ("_start", "call_gmon_start", "__libc_csu_init", "__libc_csu_fini");
 
 
 # wildcards to match against and ignore
@@ -110,11 +114,15 @@ foreach(@array)
 	my $bytes = $last_line;
 	$bytes =~ s/^[^\t]*\t//s;
 	$bytes =~ s/\t.*$//s;
-	my $count = $bytes =~ tr/e//;
-	$count = $count + 1;
-	
+	#print $bytes . "\n";
+	my $count;
+	$count = int(number_of_spaces($bytes)) + 1;
+
 	# calculate the length of this function
 	my $function_length = hex($last_line_address) + $count - hex($function_address);
+
+	print $function_name . ":" . $function_length . "\n";
+	print $last_line_address . " + " . $count . " - " . $function_address . "\n";
 
 	# append the length to the length list (not the main function though)
 	if($function_name ne "main")
@@ -158,6 +166,8 @@ foreach(@array)
 
 	foreach(@lines)
 	{
+		my $plt_mode = 0;
+
 		if($_ eq $lines[0])
 		{
 			next;
@@ -171,15 +181,27 @@ foreach(@array)
 		$jump_name =~ s/\ .*$//s;
 
 
-		if($jump_name ne "" and $jump_name !~ $function_name and 
-			$jump_name !~ "plt")
+		if($jump_name ne "" and $jump_name !~ $function_name 
+			#and $jump_name !~ "plt"
+			)
 		{
-			$patch_needed = 1;
-
 			my $jump_address = $jump_line;
 			$jump_address =~ s/^\ //s;
 			$jump_address =~ s/:.*$//s;
 			$jump_address = "0x" . $jump_address;
+
+			#print $jump_name . "\n";
+
+			if($jump_name =~ "plt")
+			{
+				$plt_mode = 1;
+				print ".plt:" . $jump_name . "\n";
+				$jump_name =~ s/\@plt.*$/_plt/s;
+
+			}
+
+			$patch_needed = 1;
+
 
 			my $offset = hex($jump_address)-hex($function_address);
 			$offset = $offset + 1; # add 1, since the first is an opcode
@@ -231,13 +253,13 @@ print TEXT_SYMBOLS $text_start;
 print TEXT_SYMBOLS ")
 #define FILE_START (";
 #	print $file_start . "\n";
-print TEXT_SYMBOLS $file_start;
+print TEXT_SYMBOLS $text_file_start;
 print TEXT_SYMBOLS ")";
 
 our $symbols_mid;
 print TEXT_SYMBOLS $symbols_mid;
 print TEXT_SYMBOLS $symbol_namespace;
-
+print TEXT_SYMBOLS $plt_third;
 
 #print $file_start;
 #	0x3f0
@@ -260,11 +282,12 @@ print MAIN "unsigned int end = start " . $length_list . ";\n";
 
 # print the addresses
 print MAIN $address_list;
-
+print MAIN $plt_first;
 print MAIN $main_mid;
 
 # print the pushback list
 print MAIN $pushback_list;
+print MAIN $plt_second;
 
 print MAIN $main_end;
 

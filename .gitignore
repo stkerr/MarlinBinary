@@ -40,3 +40,5 @@ DynamicMarlin/main.cpp
 DynamicMarlin/jumppatching.h
 
 DynamicMarlin/text_symbols.h
+
+Apps/*
