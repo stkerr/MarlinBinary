@@ -42,3 +42,7 @@ DynamicMarlin/jumppatching.h
 DynamicMarlin/text_symbols.h
 
 Apps/*
+
+DynamicMarlin/h.S
+
+DynamicMarlin/hm.S

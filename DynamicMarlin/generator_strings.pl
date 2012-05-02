@@ -9,11 +9,11 @@ map<string, list<jumppatching*>* > *patch_database; // <symbol name, list of pat
 std::map<std::string, int> current_addresses;
 bool lowlevel_patch(unsigned char *buffer, int offset, int dest)
 {
-    cout << hex << \"Patching: 0x\" << offset << \" to 0x\" << dest << endl;
-    cout << hex << \"\t\" << FILE_TO_TEXT(offset) << \" to 0x\" << FILE_TO_TEXT(dest) << endl;
+    //cout << hex << \"Patching: 0x\" << offset << \" to 0x\" << dest << endl;
+    //cout << hex << \"\t\" << FILE_TO_TEXT(offset) << \" to 0x\" << FILE_TO_TEXT(dest) << endl;
     int distance_to_jump = dest-offset-4; // 4 bytes for the instruction
     *((int*)(buffer+offset)) = distance_to_jump;
-    cout << hex << \"Patched jump: 0x\" << distance_to_jump << endl;
+   // cout << hex << \"Patched jump: 0x\" << distance_to_jump << endl;
     return true;
 }
 #define STR_EXPAND(tok) #tok
@@ -227,13 +227,13 @@ our $main_mid = "
         unsigned int function_length = item.second.second;
 
         // copy that block into the temporary buffer
-        cout << hex  << \"Copying : \" << item.first << \". File offset : \" << address << \" => \" << function_length << endl;
+        //cout << hex  << \"Copying : \" << item.first << \". File offset : \" << address << \" => \" << function_length << endl;
         memcpy(tempbuffer + current_address, buffer + address, function_length);
 
         // record where this function now is (as far as current address)
         current_address_map[item.first] = TEXT_TO_FILE(start + current_address);
 
-        cout << hex << \"Putting \" << item.first << \" at \" << current_address_map[item.first] << \" to \" << current_address_map[item.first] + function_length << endl;
+        //cout << hex << \"Putting \" << item.first << \" at \" << current_address_map[item.first] << \" to \" << current_address_map[item.first] + function_length << endl;
                 
         // increase the current address
         current_address += function_length;
@@ -242,14 +242,14 @@ our $main_mid = "
         function_addresses.erase(it);
     }
 
-    cout << endl;
+    //cout << endl;
 
     // write the temp buffer out
     //write_file((string(argv[1]) + \".TEMPBUFFER\").c_str(), tempbuffer, end - start);
 
     // copy the temporary buffer back to the normal buffer
-    cout << hex << \"Temp buffer length: 0x\" << end - start << endl;
-    cout << hex << \"First function at file offset: 0x\" << TEXT_TO_FILE(start) << endl;
+    //cout << hex << \"Temp buffer length: 0x\" << end - start << endl;
+    //cout << hex << \"First function at file offset: 0x\" << TEXT_TO_FILE(start) << endl;
 
     memcpy(buffer + TEXT_TO_FILE(start), tempbuffer, end - start);
 
@@ -265,38 +265,38 @@ prepare_patch_database();
     /*map<string, list<jumppatching*>* >::iterator patch_mit;
                 for ( patch_mit=patch_database->begin() ; patch_mit != patch_database->end(); patch_mit++ )
                 {
-                        cout << (*patch_mit).first;
+                        //cout << (*patch_mit).first;
                         list<jumppatching*>* t_patches = patch_database->find((*symbols_it).symbolName)->second;
-                        cout << \":\" << t_patches->size() << endl;
+                        //cout << \":\" << t_patches->size() << endl;
                 }
-                cout << \"----\" << endl;
+                //cout << \"----\" << endl;
       */   
 
 #ifndef NO_JUMP_PATCHING
    
     for (symbols_it = symbols.begin(); symbols_it != symbols.end(); symbols_it++)
     {
-        cout << hex << \"Processing \" << symbols_it->symbolName << \"() from 0x\" << symbols_it->address << \" length: 0x\" << symbols_it->length << endl;
-        cout << hex << \"\t\" << \"Currently at: \" << current_address_map[symbols_it->symbolName] << endl;
+        //cout << hex << \"Processing \" << symbols_it->symbolName << \"() from 0x\" << symbols_it->address << \" length: 0x\" << symbols_it->length << endl;
+        //cout << hex << \"\t\" << \"Currently at: \" << current_address_map[symbols_it->symbolName] << endl;
         // Check for if we need to patch jump instructions 
         if (symbols_it->jumppatching >= NOTDETERMINED)
         {
 
             if (patch_database->count((*symbols_it).symbolName) == 0)
             {
-                cout << \"No patches for symbol: \" << (*symbols_it).symbolName << \" in patch database\" << endl;
+                //cout << \"No patches for symbol: \" << (*symbols_it).symbolName << \" in patch database\" << endl;
                 continue;
             }
             else
             {
-                cout << \"Patches found for symbol \" << (*symbols_it).symbolName << endl;
+                //cout << \"Patches found for symbol \" << (*symbols_it).symbolName << endl;
             }
 
             bool patch_results = true;
 
             list<jumppatching*>* patches = patch_database->find((*symbols_it).symbolName)->second;
 
-            cout << \"Size:\" << patches->size() << endl;
+            //cout << \"Size:\" << patches->size() << endl;
             
                 
             list<jumppatching*>::iterator patch_it;
@@ -309,10 +309,10 @@ prepare_patch_database();
                 for (function_it = function_patches.begin(); function_it != function_patches.end(); function_it++)
                 {
                     //cout << \"Function call patch\" << endl;
-                    cout << function_it->function_name << \"->\" << function_it->dest_function_name << endl;
+                    //cout << function_it->function_name << \"->\" << function_it->dest_function_name << endl;
                     
-                    cout << hex << \"DEST: \" << current_address_map[function_it->dest_function_name] << \":\" << 
-                            FILE_TO_TEXT(current_address_map[function_it->dest_function_name]) << endl;
+                    //cout << hex << \"DEST: \" << current_address_map[function_it->dest_function_name] << \":\" << 
+                    //        FILE_TO_TEXT(current_address_map[function_it->dest_function_name]) << endl;
                     
                     lowlevel_patch(buffer,
                             current_address_map[function_it->function_name] + function_it->offset,
@@ -325,27 +325,27 @@ prepare_patch_database();
             //patch_results = perform_patch(buffer, *it, new_location);
             if (patch_results == false)
             {
-                cout << \"Jump patching failed for randomized symbol :\" << symbols_it->symbolName << endl;
-                cout << endl;
+                //cout << \"Jump patching failed for randomized symbol :\" << symbols_it->symbolName << endl;
+                //cout << endl;
                 continue;
             }
             else
             {
-                cout << \"Jump patching succeeded for symbol: \" << symbols_it->symbolName << endl;
+                //cout << \"Jump patching succeeded for symbol: \" << symbols_it->symbolName << endl;
             }
         }
         else if (symbols_it->jumppatching == NOTDETERMINED)
         {
-            cout << \"Could not determine if jump patching needed. Might experience errors in symbol:\" << symbols_it->symbolName << endl;
-            cout << endl;
+            //cout << \"Could not determine if jump patching needed. Might experience errors in symbol:\" << symbols_it->symbolName << endl;
+            //cout << endl;
             continue;
         }
         else
         {
-            cout << \"Jump patching not needed for symbol: \" << symbols_it->symbolName << endl;
+            //cout << \"Jump patching not needed for symbol: \" << symbols_it->symbolName << endl;
         }
         
-        cout << endl;
+        //cout << endl;
     }
 
 #endif

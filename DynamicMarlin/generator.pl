@@ -49,7 +49,7 @@ print PATCHING $patch_start;
 my @array = split(/\n{2,}/, $text_section); # note the new pattern
 
 # forbidden symbols we do not want to touch
-my @forbidden = ("_start", "call_gmon_start", "__libc_csu_init", "__libc_csu_fini");
+my @forbidden = ("_start", "call_gmon_start", "__libc_csu_init", "__libc_csu_fini, __gmon_start___plt");
 
 
 # wildcards to match against and ignore
@@ -115,14 +115,14 @@ foreach(@array)
 	$bytes =~ s/^[^\t]*\t//s;
 	$bytes =~ s/\t.*$//s;
 	#print $bytes . "\n";
-	my $count;
-	$count = int(number_of_spaces($bytes)) + 1;
+	my $count = 0;
+	$count = int(number_of_spaces($bytes));
 
 	# calculate the length of this function
 	my $function_length = hex($last_line_address) + $count - hex($function_address);
 
-	print $function_name . ":" . $function_length . "\n";
-	print $last_line_address . " + " . $count . " - " . $function_address . "\n";
+#	print $function_name . ":" . $function_length . "\n";
+#	print $last_line_address . " + " . $count . " - " . $function_address . "\n";
 
 	# append the length to the length list (not the main function though)
 	if($function_name ne "main")
@@ -195,7 +195,7 @@ foreach(@array)
 			if($jump_name =~ "plt")
 			{
 				$plt_mode = 1;
-				print ".plt:" . $jump_name . "\n";
+				#print ".plt:" . $jump_name . "\n";
 				$jump_name =~ s/\@plt.*$/_plt/s;
 
 			}

@@ -20,17 +20,20 @@ return "0x" . $symbol_file;
 
 sub number_of_spaces
 {
-	$text = $_[0];
-	$count = 0;
+	my $text = $_[0];
+	#print $text . "a\n";
+	my $internal_count = 0;
 
+	$text =~ s/\ +$//;
+	#print $text . "a\n";
 	while($text ne "")
 	{
-		$text =~ s/[^\ ]*\ //s;
-#		print $text . "\n";
-		$count = $count + 1;
+		$text =~ s/[^\ ]*(\ )?//s;
+	#	print $text . "\n";
+		$internal_count = $internal_count + 1;
 	}
-	#print "calc: " . $count . "\n";
-	return $count;
+	#print "calc: " . $internal_count . "\n";
+	return $internal_count;
 }
 
 sub find_text_start
@@ -67,7 +70,7 @@ sub find_plt_start
 	$symbol_file =~ s/[^\ ]*\ [^\ ]*\ //s;
 	$symbol_file =~ s/\ .*$//s;
 
-	print $symbol_file . "\n";
+	#print $symbol_file . "\n";
 	return "0x" . $symbol_file;
 }
 
@@ -85,7 +88,7 @@ sub find_file_plt_start
 	$symbol_file =~ s/[^\ ]*\ [^\ ]*\ [^\ ]*\ [^\ ]*\ [^\ ]*\ [^\ ]*\ //s;
 	$symbol_file =~ s/\ .*$//s;
 
-	print $symbol_file . "\n";
+	#print $symbol_file . "\n";
 	return "0x" . $symbol_file;
 }
 
