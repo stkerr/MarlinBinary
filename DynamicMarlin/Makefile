@@ -5,21 +5,21 @@ BINARY=
 all: check_param
 	
 # Runs the different stages
-start: files compile execute
+start: files
 
 # Executes the custom configured Marlin
 execute:
-	./CustomMarlinizer $(BINARY)
+	@./CustomMarlinizer $(BINARY)
 
 # Compile all the generated files along with the normal files togher
 compile: 
-	g++ -o CustomMarlinizer main.cpp patch.cpp
+	@g++ -o CustomMarlinizer main.cpp patch.cpp
 
 # Generate the C++ files using the perl scripts
 files: 
-	objdump -d $(BINARY) > code.S		# disassembler
-	objdump -h $(BINARY) > symbols.S	# section headers
-	perl generator.pl code.S symbols.S	# generator scripts
+	@objdump -d $(BINARY) > code.S		# disassembler
+	@objdump -h $(BINARY) > symbols.S	# section headers
+	@perl generator.pl code.S symbols.S $(BINARY)	# generator scripts
 
 clean: 
 	rm code.S

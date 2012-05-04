@@ -114,6 +114,7 @@ sub generate_plt_list
 	my $first = "";
 	my $second = "";
 	my $third = "";
+	my $fourth = "";
 
 	foreach(@array)
 	{
@@ -144,6 +145,7 @@ sub generate_plt_list
 		}
 
 
+		$fourth = $fourth . $function_name . " " . $function_address . " " . 16 . " " . "0x1" . "\n";
 
 		#current_address_map.insert(pair<string, unsigned int>("main", text_symbols::fun_main.address));
 		$first = $first . "current_address_map.insert(pair<string, unsigned int>(\"" . $function_name . "\", text_symbols::fun_" . $function_name . ".address));\n";
@@ -160,7 +162,7 @@ sub generate_plt_list
 #	print $second;
 #	print "\n";
 #	print $third;
-	return ($first, $second, $third);
+	return ($first, $second, $third, $fourth);
 }
 
 # needed if this file is included with REQUIRE

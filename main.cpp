@@ -13,16 +13,65 @@
 #include <map>
 #include <string.h>
 #include <vector>
+#include <fstream>
 
 #include "jumppatching.h"
 #include "text_symbols.h"
 
-
-
 using namespace std;
+
+list<text_symbol> entry_list;
 
 vector<pair<string, pair< unsigned int, unsigned int> > > function_addresses; // function name, <start address, length>
 map < string, unsigned int > current_address_map; // function name, current address
+
+
+unsigned int TEXT_START;
+unsigned int FILE_START;
+
+/**
+ * Reads the given file and adds to the entry list
+ * Format:
+ *      SymbolName Address Length JumpPatching
+ * @param path
+ */
+void process_entry_argument(char* path)
+{
+    ifstream file;
+    file.open(path, ifstream::in);
+    
+    while(!file.eof())
+    {
+        char buffer[250];
+        memset(buffer, 0, 250);
+        file.getline(buffer, 250);
+    
+        if(strlen(buffer) == 0)
+            break;
+        
+        text_symbol temp;
+        
+        char* toks = strtok(buffer, " \n");
+        
+        strcpy(temp.symbolName, toks);
+        
+        toks = strtok(NULL, " \n");
+        
+        temp.address = strtoul (toks,NULL,0);
+        
+        toks = strtok(NULL, " \n");
+        
+        temp.length = strtoul (toks,NULL,0);
+        
+        toks = strtok(NULL, " \n");
+        
+        temp.jumppatching = strtoul (toks,NULL,0);
+        
+        entry_list.push_back(temp);
+    }
+    
+    file.close();   
+}
 
 unsigned char * read_file(char* path, unsigned long* length)
 {
@@ -79,73 +128,57 @@ void write_file(const char* path, unsigned char* buffer, unsigned int length)
  */
 int main(int argc, char** argv)
 {
-    if (argc != 2)
+    
+            
+    if (argc != 6)
     {
-        cout << "Usage: " << argv[0] << " filename" << endl;
+        cout << "Usage: " << argv[0] << " BinaryFilename  SymbolFilename PatchFilename FileStart TextStart" << endl;
         return -1;
     }
 
+    process_entry_argument(argv[2]);
+    read_patch_file(argv[3]);
+    FILE_START = strtoul(argv[4], NULL, 0);
+    TEXT_START = strtoul(argv[5], NULL, 0);
+    
+    list<text_symbol> symbols;
+    list<text_symbol>::iterator symbols_it;
+    
     // get the file as a buffer
     unsigned long length;
     unsigned char* buffer = read_file(argv[1], &length);
 
     // mark the start and end locations for the randomization
-    unsigned int start = 0x80484c4;
-    unsigned int end = start + 10 * 0x1D + 10 * 0xA;
+    unsigned int start = entry_list.front().address;
+    unsigned int end = start;
+    for(symbols_it = entry_list.begin(); symbols_it != entry_list.end(); symbols_it++)
+    {
+        if(strcmp(symbols_it->symbolName, "main") == 0)
+            continue;
+        
+        end = end + symbols_it->length;
+    }
+    
 
     // mark where we are starting our randomization
     int current_address = 0;
 
     // initialize the initial function addresses
-    function_addresses.push_back(pair<string, pair<unsigned int, unsigned int> >("function1", pair<unsigned int, unsigned int>(text_symbols::fun_function1.address, 0x1d)));
-    function_addresses.push_back(pair<string, pair<unsigned int, unsigned int> >("function2", pair<unsigned int, unsigned int>(text_symbols::fun_function2.address, 0x1d)));
-    function_addresses.push_back(pair<string, pair<unsigned int, unsigned int> >("function3", pair<unsigned int, unsigned int>(text_symbols::fun_function3.address, 0x1d)));
-    function_addresses.push_back(pair<string, pair<unsigned int, unsigned int> >("function4", pair<unsigned int, unsigned int>(text_symbols::fun_function4.address, 0x1d)));
-    function_addresses.push_back(pair<string, pair<unsigned int, unsigned int> >("function5", pair<unsigned int, unsigned int>(text_symbols::fun_function5.address, 0x1d)));
-    function_addresses.push_back(pair<string, pair<unsigned int, unsigned int> >("function6", pair<unsigned int, unsigned int>(text_symbols::fun_function6.address, 0x1d)));
-    function_addresses.push_back(pair<string, pair<unsigned int, unsigned int> >("function7", pair<unsigned int, unsigned int>(text_symbols::fun_function7.address, 0x1d)));
-    function_addresses.push_back(pair<string, pair<unsigned int, unsigned int> >("function8", pair<unsigned int, unsigned int>(text_symbols::fun_function8.address, 0x1d)));
-    function_addresses.push_back(pair<string, pair<unsigned int, unsigned int> >("function9", pair<unsigned int, unsigned int>(text_symbols::fun_function9.address, 0x1d)));
-    function_addresses.push_back(pair<string, pair<unsigned int, unsigned int> >("function10", pair<unsigned int, unsigned int>(text_symbols::fun_function10.address, 0x1d)));
-
-    
-    function_addresses.push_back(pair<string, pair<unsigned int, unsigned int> >("jump_function1", pair<unsigned int, unsigned int>(text_symbols::fun_jumpfunction1.address, 0xa)));
-    function_addresses.push_back(pair<string, pair<unsigned int, unsigned int> >("jump_function2", pair<unsigned int, unsigned int>(text_symbols::fun_jumpfunction2.address, 0xa)));
-    function_addresses.push_back(pair<string, pair<unsigned int, unsigned int> >("jump_function3", pair<unsigned int, unsigned int>(text_symbols::fun_jumpfunction3.address, 0xa)));
-    function_addresses.push_back(pair<string, pair<unsigned int, unsigned int> >("jump_function4", pair<unsigned int, unsigned int>(text_symbols::fun_jumpfunction4.address, 0xa)));
-    function_addresses.push_back(pair<string, pair<unsigned int, unsigned int> >("jump_function5", pair<unsigned int, unsigned int>(text_symbols::fun_jumpfunction5.address, 0xa)));
-    function_addresses.push_back(pair<string, pair<unsigned int, unsigned int> >("jump_function6", pair<unsigned int, unsigned int>(text_symbols::fun_jumpfunction6.address, 0xa)));
-    function_addresses.push_back(pair<string, pair<unsigned int, unsigned int> >("jump_function7", pair<unsigned int, unsigned int>(text_symbols::fun_jumpfunction7.address, 0xa)));
-    function_addresses.push_back(pair<string, pair<unsigned int, unsigned int> >("jump_function8", pair<unsigned int, unsigned int>(text_symbols::fun_jumpfunction8.address, 0xa)));
-    function_addresses.push_back(pair<string, pair<unsigned int, unsigned int> >("jump_function9", pair<unsigned int, unsigned int>(text_symbols::fun_jumpfunction9.address, 0xa)));
-    function_addresses.push_back(pair<string, pair<unsigned int, unsigned int> >("jump_function10", pair<unsigned int, unsigned int>(text_symbols::fun_jumpfunction10.address, 0xa)));
-    
-
-    // initialise the current addresses
-    current_address_map.insert(pair<string, unsigned int>("function1", text_symbols::fun_function1.address));
-    current_address_map.insert(pair<string, unsigned int>("function2", text_symbols::fun_function2.address));
-    current_address_map.insert(pair<string, unsigned int>("function3", text_symbols::fun_function3.address));
-    current_address_map.insert(pair<string, unsigned int>("function4", text_symbols::fun_function4.address));
-    current_address_map.insert(pair<string, unsigned int>("function5", text_symbols::fun_function5.address));
-    current_address_map.insert(pair<string, unsigned int>("function6", text_symbols::fun_function6.address));
-    current_address_map.insert(pair<string, unsigned int>("function7", text_symbols::fun_function7.address));
-    current_address_map.insert(pair<string, unsigned int>("function8", text_symbols::fun_function8.address));
-    current_address_map.insert(pair<string, unsigned int>("function9", text_symbols::fun_function9.address));
-    current_address_map.insert(pair<string, unsigned int>("function10", text_symbols::fun_function10.address));
-
-    
-    current_address_map.insert(pair<string, unsigned int>("jump_function1", text_symbols::fun_jumpfunction1.address));
-    current_address_map.insert(pair<string, unsigned int>("jump_function2", text_symbols::fun_jumpfunction2.address));
-    current_address_map.insert(pair<string, unsigned int>("jump_function3", text_symbols::fun_jumpfunction3.address));
-    current_address_map.insert(pair<string, unsigned int>("jump_function4", text_symbols::fun_jumpfunction4.address));
-    current_address_map.insert(pair<string, unsigned int>("jump_function5", text_symbols::fun_jumpfunction5.address));
-    current_address_map.insert(pair<string, unsigned int>("jump_function6", text_symbols::fun_jumpfunction6.address));
-    current_address_map.insert(pair<string, unsigned int>("jump_function7", text_symbols::fun_jumpfunction7.address));
-    current_address_map.insert(pair<string, unsigned int>("jump_function8", text_symbols::fun_jumpfunction8.address));
-    current_address_map.insert(pair<string, unsigned int>("jump_function9", text_symbols::fun_jumpfunction9.address));
-    current_address_map.insert(pair<string, unsigned int>("jump_function10", text_symbols::fun_jumpfunction10.address));
-    
-    current_address_map.insert(pair<string, unsigned int>("main", text_symbols::fun_main.address));
+    list<text_symbol>::iterator s_it;
+    cout << "Entry list: " << entry_list.size() << endl;
+    for(s_it = entry_list.begin(); s_it != entry_list.end(); s_it++)
+    {
+        cout << (s_it->jumppatching & DONOTADD) << endl;
+        if((s_it->jumppatching & DONOTADD) != 1 && strcmp(s_it->symbolName,"main")!= 0)
+        {
+            cout << "adding " << s_it->symbolName << endl;
+                function_addresses.push_back(pair<string, pair<unsigned int, unsigned int> >(s_it->symbolName, pair<unsigned int, unsigned int>(s_it->address, s_it->length)));
+        }
+        
+        current_address_map.insert(pair<string, unsigned int>(s_it->symbolName, s_it->address));
+        
+        symbols.push_back(*s_it);
+    }
     
     /***
      * Shuffling stage
@@ -178,7 +211,7 @@ int main(int argc, char** argv)
 
         // copy that block into the temporary buffer
         cout << hex  << "Copying : " << item.first << ". File offset : " << address << " => " << function_length << endl;
-        memcpy(tempbuffer + current_address, buffer + address, function_length);
+        memcpy(tempbuffer + current_address, buffer + TEXT_TO_FILE(address), function_length);
 
         // record where this function now is (as far as current address)
         current_address_map[item.first] = TEXT_TO_FILE(start + current_address);
@@ -206,9 +239,8 @@ int main(int argc, char** argv)
     /***
      * Jump Patching Stage
      ***/
-    list<text_symbol> symbols;
-    list<text_symbol>::iterator symbols_it;
     
+    /*
     symbols.push_back(text_symbols::fun_function1);
     symbols.push_back(text_symbols::fun_function2);
     symbols.push_back(text_symbols::fun_function3);
@@ -233,6 +265,7 @@ int main(int argc, char** argv)
     symbols.push_back(text_symbols::fun_jumpfunction10);
     
     symbols.push_back(text_symbols::fun_main);
+    */
 
     prepare_patch_database();
     /*map<string, list<jumppatching*>* >::iterator patch_mit;
@@ -245,6 +278,7 @@ int main(int argc, char** argv)
                 cout << "----" << endl;
       */   
 
+//#define NO_JUMP_PATCHING
 #ifndef NO_JUMP_PATCHING
    
     for (symbols_it = symbols.begin(); symbols_it != symbols.end(); symbols_it++)
@@ -290,7 +324,9 @@ int main(int argc, char** argv)
                 for (function_it = function_patches.begin(); function_it != function_patches.end(); function_it++)
                 {
                     //cout << "Funciton call patch" << endl;
-                    cout << function_it->function_name << "->" << function_it->dest_function_name << endl;
+                    cout << function_it->function_name << "[" << current_address_map[function_it->function_name] << "]" <<
+                            "->" << function_it->dest_function_name <<
+                            "[" << current_address_map[function_it->dest_function_name] << "]" << endl;
                     
                     cout << hex << "DEST: " << current_address_map[function_it->dest_function_name] << ":" << 
                             FILE_TO_TEXT(current_address_map[function_it->dest_function_name]) << endl;

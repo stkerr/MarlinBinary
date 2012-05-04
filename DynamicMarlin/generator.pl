@@ -21,7 +21,7 @@ my $text_start = find_text_start($ARGV[1]);
 my $plt_start = find_plt_start($ARGV[1]);
 my $plt_file_start = find_file_plt_start($ARGV[1]);
 
-my ($plt_first, $plt_second, $plt_third) = generate_plt_list($ARGV[0]);
+my ($plt_first, $plt_second, $plt_third, $plt_fourth) = generate_plt_list($ARGV[0]);
 
 # only use the .text section
 $text_section =~ s/^.*?.Disassembly of section .text://s;
@@ -36,6 +36,10 @@ open TEXT_SYMBOLS, ">", 'text_symbols.h' || die("Cannot Open File");
 open MAIN, ">", 'main.cpp' || die("Cannot open main file");
 open JUMPPATCH, ">", 'jumppatching.h' || die("Cannot open jumppatching.h");
 
+
+open PATCHFILE, ">", 'patchlist.txt' || die("Cannot open file");
+open FUNCLIST, ">", 'symbollist.txt' || die("Cannot open file");
+
 our $patch_start;
 our $symbols_start;
 
@@ -43,13 +47,13 @@ our $symbols_start;
 
 print PATCHING $patch_start;
 
-
+print PATCHFILE $plt_fourth;
 
 
 my @array = split(/\n{2,}/, $text_section); # note the new pattern
 
 # forbidden symbols we do not want to touch
-my @forbidden = ("_start", "call_gmon_start", "__libc_csu_init", "__libc_csu_fini, __gmon_start___plt");
+my @forbidden = ("_start", "call_gmon_start", "__libc_csu_init", "__libc_csu_fini", "__gmon_start___plt");
 
 
 # wildcards to match against and ignore
@@ -84,11 +88,12 @@ foreach(@array)
 	# ignore forbidden symbols
 	if (grep {$_ eq $function_name} @forbidden)
 	{
-#		print $function_name . " is forbidden\n";
+		print $function_name . " is forbidden\n";
 		next;
 	}
 	else
 	{
+		print "Processing: " . $function_name . "\n";
 	}
 
 	my $function_address = $lines[0];
@@ -129,7 +134,7 @@ foreach(@array)
 	{
 		$length_list = $length_list . " + " . $function_length;
 	}
-	
+
 	# we want to make
 	# const text_symbol fun_function1 = { 0x1D, TEXT_TO_FILE(0x80484c4), "function1", NOPATCHNEEDED};
 	$symbol_namespace = $symbol_namespace . "const text_symbol fun_" . $function_name . " = { " . $function_length
@@ -153,8 +158,6 @@ foreach(@array)
 
 	# sentinel value if this function needs patching
 	my $patch_needed = 0;
-
-
 	
 
 
@@ -211,11 +214,15 @@ foreach(@array)
 #			print $jump_name;
 			if($jump_count == 0)
 			{
+				print PATCHFILE $function_name . " " . $jump_name  . " " . $offset . " " . $jump_count . "\n";
+
 				print PATCHING "MASTER(" . $function_name . ", " . $jump_name
 					. ", " . $offset . ", 0, " . $jump_count . ");";
 			}
 			else
 			{
+				print PATCHFILE $function_name . " " . $jump_name  . " " . $offset . " " . $jump_count . "\n";
+
 				print PATCHING "ADDITION(" . $function_name . ", " . $jump_name
 					. ", " . $offset . ", 0, " . $jump_count . ");";
 			}
@@ -228,10 +235,12 @@ foreach(@array)
 
 	if($patch_needed != 0)
 	{
+		print FUNCLIST $function_name . " " . $function_address . " " . $function_length . " " . "0x100" . "\n";
 		$symbol_namespace = $symbol_namespace . "PATCHNEEDED};";
 	}
 	else
 	{
+		print FUNCLIST $function_name . " " . $function_address . " " . $function_length . " " . "0x0" . "\n";
 		$symbol_namespace = $symbol_namespace . "NOPATCHNEEDED};";
 	}
 	$symbol_namespace = $symbol_namespace . "\n";
@@ -295,3 +304,12 @@ print MAIN $main_end;
 ### Make jumppatching.h ###
 our $jumppatching_whole;
 print JUMPPATCH $jumppatching_whole;
+
+
+#print FUNCLIST "\n";
+#print PATCHFILE "\n";
+
+### Execute the MarlinProgram now
+my $command = "/Users/stkerr/Documents/Code/MarlinBinaryProcessor/dist/Debug/GNU-MacOSX/marlinbinaryprocessor " . $ARGV[2] . " symbollist.txt patchlist.txt " . $text_file_start . " " . $text_start . "\n" ;
+print $command;
+system($command);

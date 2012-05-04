@@ -2,6 +2,7 @@
 #include <iostream>
 #include <map>
 #include <string>
+#include <fstream>
 
 using namespace std;
 
@@ -12,12 +13,88 @@ map<string, list<jumppatching*>* > *patch_database; // <symbol name, list of pat
 
 std::map<std::string, int> current_addresses;
 
+typedef struct patch_entry_struct {
+    text_symbol source;
+    text_symbol dest;
+    int offset;
+    int d_offset;
+} patch_entry;
+
+text_symbol lookup_symbol_by_name(char* name)
+{
+    list<text_symbol>::iterator it;
+    for(it = entry_list.begin(); it != entry_list.end(); it++)
+    {
+        if(strcmp(it->symbolName, name) == 0)
+        {
+            return *it;
+        }
+    }
+}
+
+list<patch_entry> patch_entry_list;
+
+/**
+ * Reads the file line by line & fills out a list of jump patches
+ * Format:
+ *     <source function> <dest function> <offset> <dest offset>
+ * @param path
+ * @return 
+ */
+void read_patch_file(char* path)
+{
+    fstream file;
+    file.open(path, fstream::in);
+    
+    while(!file.eof())
+    {
+        char buffer[250];
+        memset(buffer, 0, 250);
+        file.getline(buffer, 250);
+    
+        if(strlen(buffer) == 0)
+            break;
+        
+        char* toks = strtok(buffer, " ");
+        
+        text_symbol source = lookup_symbol_by_name(toks);
+        
+        toks = strtok(NULL, " ");
+        
+        text_symbol dest = lookup_symbol_by_name(toks);
+        
+        toks = strtok(NULL, " ");
+        
+        int offset = strtoul (toks,NULL,0);
+        
+        toks = strtok(NULL, " ");
+        
+        int d_offset = strtoul (toks,NULL,0);
+        
+        patch_entry temp = { source, dest, offset, d_offset };
+        
+        patch_entry_list.push_back(temp);
+    }
+    
+    file.close();        
+}
 
 
 /* Calculates and updates the jump distance for teh given offset and destination address */
 bool lowlevel_patch(unsigned char *buffer, int offset, int dest)
 {
-	cout << hex << "Patching: 0x" << offset << " to 0x" << dest << endl;
+    if(offset > 0x1000000)
+    {
+        cout << "Flipping offset of patch!" << endl;
+        offset = TEXT_TO_FILE(offset);
+    }
+    
+    if(dest > 0x1000000)
+    {
+        cout << "Flipping dest of patch!" << endl;
+        dest = TEXT_TO_FILE(offset);
+    }
+	cout << hex << "Patching: 0x" << (offset) << " to 0x" << (dest) << endl;
         cout << hex << "\t" << FILE_TO_TEXT(offset) << " to 0x" << FILE_TO_TEXT(dest) << endl;
         
 	int distance_to_jump = dest-offset-4; // 4 bytes for the instruction
@@ -58,6 +135,7 @@ bool lowlevel_patch(unsigned char *buffer, int offset, int dest)
         GEN_PATCH( func , dest , off, d_off , count) \
         GEN_JUMP( func, count) \
         GEN_INSERT (  func , count)
+
 /*
  * Iterates through every symbol and prepares the list of patches
  * needed for each symbol
@@ -68,43 +146,33 @@ map<string, list<jumppatching*>* >* prepare_patch_database()
     list<jumppatching*> *patches;
     map<string, list<jumppatching*>* >* patch_db = new map<string, list<jumppatching*>* >;
 
-	MASTER(jump_function1, function1, 4, 0, 0)
-	MASTER(jump_function2, function2, 4, 0, 0)
-	MASTER(jump_function3, function3, 4, 0, 0)
-	MASTER(jump_function4, function4, 4, 0, 0)
-	MASTER(jump_function5, function5, 4, 0, 0)
-	MASTER(jump_function6, function6, 4, 0, 0)
-	MASTER(jump_function7, function7, 4, 0, 0)
-	MASTER(jump_function8, function8, 4, 0, 0)
-	MASTER(jump_function9, function9, 4, 0, 0)
-	MASTER(jump_function10, function10, 4, 0, 0)
-                
-        //MASTER(main, function1, 10, 0, 0)
-
-                
-        MASTER(main, function1, 10, 0, 0)
-        ADDITION(main, function2, 15, 0, 1)
-        ADDITION(main, function3, 20, 0, 2)
-        ADDITION(main, function4, 25, 0, 3)
-        ADDITION(main, function5, 30, 0, 4)
-        ADDITION(main, function6, 35, 0, 5)
-        ADDITION(main, function7, 40, 0, 6)        
-        ADDITION(main, function8, 45, 0, 7)
-        ADDITION(main, function9, 50, 0, 8)
-        ADDITION(main, function10, 55, 0, 9)
-       
-
-        ADDITION(main, jump_function1, 60, 0, 11)
-        ADDITION(main, jump_function2, 69, 0, 12)
-        ADDITION(main, jump_function3, 78, 0, 13)
-        ADDITION(main, jump_function4, 87, 0, 14)
-        ADDITION(main, jump_function5, 96, 0, 15)
-        ADDITION(main, jump_function6, 105, 0, 16)
-        ADDITION(main, jump_function7, 114, 0, 17)        
-        ADDITION(main, jump_function8, 123, 0, 18)
-        ADDITION(main, jump_function9, 132, 0, 19)
-        ADDITION(main, jump_function10, 141, 0, 10)
+    list<patch_entry>::iterator it;
+    
+    for(it = patch_entry_list.begin(); it != patch_entry_list.end(); it++)
+    {
+        if(patch_db->find(it->source.symbolName) != patch_db->end())
+        {
+            patches = (patch_db->find(it->source.symbolName))->second;
+        }
+        else
+        {
+            patches = new list<jumppatching*>;
+        }
         
+        
+        patch temp_patch;
+        strcpy(temp_patch.function_name, it->source.symbolName);
+        strcpy(temp_patch.dest_function_name, it->dest.symbolName);
+        temp_patch.offset = it->offset;
+        temp_patch.dest_offset = it->d_offset;
+        
+        jumppatching* jump = new jumppatching();
+        jump->function_call_patches.push_front(temp_patch);
+        
+        patches->push_back(jump);
+        patch_db->insert(pair<string, list<jumppatching*>* > ( it->source.symbolName, patches));
+    }
+    
     /*
     patch jump_function1_patch;
     strcpy(jump_function1_patch.function_name, "jump_function1");
