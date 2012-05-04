@@ -312,4 +312,4 @@ print JUMPPATCH $jumppatching_whole;
 ### Execute the MarlinProgram now
 my $command = "/Users/stkerr/Documents/Code/MarlinBinaryProcessor/dist/Debug/GNU-MacOSX/marlinbinaryprocessor " . $ARGV[2] . " symbollist.txt patchlist.txt " . $text_file_start . " " . $text_start . "\n" ;
 print $command;
-system($command);
+#system($command);

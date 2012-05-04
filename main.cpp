@@ -231,8 +231,8 @@ int main(int argc, char** argv)
     //write_file((string(argv[1]) + ".TEMPBUFFER").c_str(), tempbuffer, end - start);
 
     // copy the temporary buffer back to the normal buffer
-    cout << hex << "Temp buffer length: 0x" << end - start << endl;
-    cout << hex << "First function at file offset: 0x" << TEXT_TO_FILE(start) << endl;
+//    cout << hex << "Temp buffer length: 0x" << end - start << endl;
+//    cout << hex << "First function at file offset: 0x" << TEXT_TO_FILE(start) << endl;
 
     memcpy(buffer + TEXT_TO_FILE(start), tempbuffer, end - start);
 
