@@ -46,3 +46,9 @@ Apps/*
 DynamicMarlin/h.S
 
 DynamicMarlin/hm.S
+
+DynamicMarlin/patchlist.txt
+
+DynamicMarlin/stkerr@pod1-1.cs.purdue.edu
+
+DynamicMarlin/symbollist.txt
