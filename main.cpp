@@ -165,13 +165,13 @@ int main(int argc, char** argv)
 
     // initialize the initial function addresses
     list<text_symbol>::iterator s_it;
-    cout << "Entry list: " << entry_list.size() << endl;
+//    cout << "Entry list: " << entry_list.size() << endl;
     for(s_it = entry_list.begin(); s_it != entry_list.end(); s_it++)
     {
-        cout << (s_it->jumppatching & DONOTADD) << endl;
+//        cout << (s_it->jumppatching & DONOTADD) << endl;
         if((s_it->jumppatching & DONOTADD) != 1 && strcmp(s_it->symbolName,"main")!= 0)
         {
-            cout << "adding " << s_it->symbolName << endl;
+//            cout << "adding " << s_it->symbolName << endl;
                 function_addresses.push_back(pair<string, pair<unsigned int, unsigned int> >(s_it->symbolName, pair<unsigned int, unsigned int>(s_it->address, s_it->length)));
         }
         
@@ -210,13 +210,13 @@ int main(int argc, char** argv)
         unsigned int function_length = item.second.second;
 
         // copy that block into the temporary buffer
-        cout << hex  << "Copying : " << item.first << ". File offset : " << address << " => " << function_length << endl;
+//        cout << hex  << "Copying : " << item.first << ". File offset : " << address << " => " << function_length << endl;
         memcpy(tempbuffer + current_address, buffer + TEXT_TO_FILE(address), function_length);
 
         // record where this function now is (as far as current address)
         current_address_map[item.first] = TEXT_TO_FILE(start + current_address);
 
-        cout << hex << "Putting " << item.first << " at " << current_address_map[item.first] << " to " << current_address_map[item.first] + function_length << endl;
+//        cout << hex << "Putting " << item.first << " at " << current_address_map[item.first] << " to " << current_address_map[item.first] + function_length << endl;
                 
         // increase the current address
         current_address += function_length;
@@ -225,7 +225,7 @@ int main(int argc, char** argv)
         function_addresses.erase(it);
     }
 
-    cout << endl;
+//    cout << endl;
 
     // write the temp buffer out
     //write_file((string(argv[1]) + ".TEMPBUFFER").c_str(), tempbuffer, end - start);
@@ -283,20 +283,20 @@ int main(int argc, char** argv)
    
     for (symbols_it = symbols.begin(); symbols_it != symbols.end(); symbols_it++)
     {
-        cout << hex << "Processing " << symbols_it->symbolName << "() from 0x" << symbols_it->address << " length: 0x" << symbols_it->length << endl;
-        cout << hex << "\t" << "Currently at: " << current_address_map[symbols_it->symbolName] << endl;
+//        cout << hex << "Processing " << symbols_it->symbolName << "() from 0x" << symbols_it->address << " length: 0x" << symbols_it->length << endl;
+//        cout << hex << "\t" << "Currently at: " << current_address_map[symbols_it->symbolName] << endl;
         // Check for if we need to patch jump instructions 
         if (symbols_it->jumppatching >= NOTDETERMINED)
         {
 
             if (patch_database->count((*symbols_it).symbolName) == 0)
             {
-                cout << "No patches for symbol: " << (*symbols_it).symbolName << " in patch database" << endl;
+//                cout << "No patches for symbol: " << (*symbols_it).symbolName << " in patch database" << endl;
                 continue;
             }
             else
             {
-                cout << "Patches found for symbol " << (*symbols_it).symbolName << endl;
+//                cout << "Patches found for symbol " << (*symbols_it).symbolName << endl;
             }
 
             bool patch_results = true;
@@ -311,7 +311,7 @@ int main(int argc, char** argv)
             //continue;
             list<jumppatching*>* patches = patch_database->find((*symbols_it).symbolName)->second;
 
-            cout << "Size:" << patches->size() << endl;
+//            cout << "Size:" << patches->size() << endl;
             
                 
             list<jumppatching*>::iterator patch_it;
@@ -324,12 +324,12 @@ int main(int argc, char** argv)
                 for (function_it = function_patches.begin(); function_it != function_patches.end(); function_it++)
                 {
                     //cout << "Funciton call patch" << endl;
-                    cout << function_it->function_name << "[" << current_address_map[function_it->function_name] << "]" <<
-                            "->" << function_it->dest_function_name <<
-                            "[" << current_address_map[function_it->dest_function_name] << "]" << endl;
+//                    cout << function_it->function_name << "[" << current_address_map[function_it->function_name] << "]" <<
+//                            "->" << function_it->dest_function_name <<
+//                            "[" << current_address_map[function_it->dest_function_name] << "]" << endl;
                     
-                    cout << hex << "DEST: " << current_address_map[function_it->dest_function_name] << ":" << 
-                            FILE_TO_TEXT(current_address_map[function_it->dest_function_name]) << endl;
+//                    cout << hex << "DEST: " << current_address_map[function_it->dest_function_name] << ":" << 
+//                            FILE_TO_TEXT(current_address_map[function_it->dest_function_name]) << endl;
                     
                     lowlevel_patch(buffer,
                             current_address_map[function_it->function_name] + function_it->offset,
@@ -348,7 +348,7 @@ int main(int argc, char** argv)
             }
             else
             {
-                cout << "Jump patching succeeded for symbol: " << symbols_it->symbolName << endl;
+//                cout << "Jump patching succeeded for symbol: " << symbols_it->symbolName << endl;
             }
         }
         else if (symbols_it->jumppatching == NOTDETERMINED)
@@ -359,10 +359,10 @@ int main(int argc, char** argv)
         }
         else
         {
-            cout << "Jump patching not needed for symbol: " << symbols_it->symbolName << endl;
+//            cout << "Jump patching not needed for symbol: " << symbols_it->symbolName << endl;
         }
         
-        cout << endl;
+//        cout << endl;
     }
 
 #endif

@@ -85,23 +85,23 @@ bool lowlevel_patch(unsigned char *buffer, int offset, int dest)
 {
     if(offset > 0x1000000)
     {
-        cout << "Flipping offset of patch!" << endl;
+//        cout << "Flipping offset of patch!" << endl;
         offset = TEXT_TO_FILE(offset);
     }
     
     if(dest > 0x1000000)
     {
-        cout << "Flipping dest of patch!" << endl;
+//        cout << "Flipping dest of patch!" << endl;
         dest = TEXT_TO_FILE(offset);
     }
-	cout << hex << "Patching: 0x" << (offset) << " to 0x" << (dest) << endl;
-        cout << hex << "\t" << FILE_TO_TEXT(offset) << " to 0x" << FILE_TO_TEXT(dest) << endl;
+//	cout << hex << "Patching: 0x" << (offset) << " to 0x" << (dest) << endl;
+//        cout << hex << "\t" << FILE_TO_TEXT(offset) << " to 0x" << FILE_TO_TEXT(dest) << endl;
         
 	int distance_to_jump = dest-offset-4; // 4 bytes for the instruction
 
 	*((int*)(buffer+offset)) = distance_to_jump;
 
-	cout << hex << "Patched jump: 0x" << distance_to_jump << endl;
+//	cout << hex << "Patched jump: 0x" << distance_to_jump << endl;
 
 	return true;
 }

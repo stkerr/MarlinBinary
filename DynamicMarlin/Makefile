@@ -9,11 +9,11 @@ start: files
 
 # Executes the custom configured Marlin
 execute:
-	@./CustomMarlinizer $(BINARY)
+	./CustomMarlinizer $(BINARY)
 
 # Compile all the generated files along with the normal files togher
 compile: 
-	@g++ -o CustomMarlinizer main.cpp patch.cpp
+	g++ -o CustomMarlinizer main.cpp patch.cpp
 
 # Generate the C++ files using the perl scripts
 files: 

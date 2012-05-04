@@ -53,7 +53,7 @@ print PATCHFILE $plt_fourth;
 my @array = split(/\n{2,}/, $text_section); # note the new pattern
 
 # forbidden symbols we do not want to touch
-my @forbidden = ("_start", "call_gmon_start", "__libc_csu_init", "__libc_csu_fini", "__gmon_start___plt");
+my @forbidden = ("_start", "call_gmon_start", "__libc_csu_init", "__libc_csu_fini", "__gmon_start___plt", "__i686.get_pc_thunk.bx");
 
 
 # wildcards to match against and ignore
@@ -88,12 +88,12 @@ foreach(@array)
 	# ignore forbidden symbols
 	if (grep {$_ eq $function_name} @forbidden)
 	{
-		print $function_name . " is forbidden\n";
+		#print $function_name . " is forbidden\n";
 		next;
 	}
 	else
 	{
-		print "Processing: " . $function_name . "\n";
+		#forprint "Processing: " . $function_name . "\n";
 	}
 
 	my $function_address = $lines[0];
